@@ -6,10 +6,30 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 class MainCompositeAdapter(
-    private val delegates: SparseArray<DelegateAdapter<DelegateAdapterItem, RecyclerView.ViewHolder>>
+    private val delegates: SparseArray<DelegateAdapter<DelegateAdapterItem, RecyclerView.ViewHolder>>,
+    private val customViewType: ((position: Int) -> Int)? = null
 ): ListAdapter<DelegateAdapterItem, RecyclerView.ViewHolder>(DelegateAdapterItemDiffCallback()) {
 
+/*    override fun getItemViewType(position: Int): Int {
+        for (i in 0 until delegates.size()) {
+            if (delegates[i].modelClass == getItem(position).javaClass) {
+                return delegates.keyAt(i)
+            }
+        }
+        throw NullPointerException("Can not get viewType for position $position")
+    }*/
+
+
+
     override fun getItemViewType(position: Int): Int {
+        customViewType?.let {
+            return it.invoke(position)
+        }
+        return defaultItemViewType(position)
+    }
+
+
+    fun defaultItemViewType(position: Int): Int {
         for (i in 0 until delegates.size()) {
             if (delegates[i].modelClass == getItem(position).javaClass) {
                 return delegates.keyAt(i)
@@ -17,6 +37,7 @@ class MainCompositeAdapter(
         }
         throw NullPointerException("Can not get viewType for position $position")
     }
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return delegates[viewType].createViewHolder(parent)
@@ -62,9 +83,11 @@ class MainCompositeAdapter(
             return this
         }
 
-        fun build(): MainCompositeAdapter {
+        fun build(
+            customViewType: ((position: Int) -> Int)? = null
+        ): MainCompositeAdapter {
             require(count != 0) { "Register at least one adapter" }
-            return MainCompositeAdapter(delegates)
+            return MainCompositeAdapter(delegates, customViewType)
         }
     }
 }
